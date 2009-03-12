@@ -1,7 +1,31 @@
 .. README file for sphinx-scons, in -*- rst -*- mode.
 
-This package contains ``SConstruct``, a generic SCons_ build file for
-building Sphinx_ documentation.
+Introduction
+============
+
+This package contains :file:`SConstruct`, a generic SCons_ build script for
+invoking Sphinx_ to build documentation.
+
+The :program:`sphinx-quickstart` program can automatically create two build
+scripts: a :file:`Makefile` for Unix systems, and a :file:`make.bat`
+equivalent for Windows.  This script has the advantage that it works the
+same way on both systems (once you have installed SCons).
+
+Usage
+=====
+
+Basically, just copy the :file:`SConstruct` file to the top-level directory
+of your Sphinx docs, and then use :program:`scons` at a command prompt to
+build things.  Typing :command:`scons -h` will give a help message
+describing all the things you can do.
+
+As an example, if you just type :command:`scons` in this package's
+directory, you can read this :file:`README` in style, á la Sphinx.
+
+Bugs
+====
+
+Report any problems to me at zondo42@googlemail.com.
 
 .. _SCons: http://www.scons.org
 .. _Sphinx: http://sphinx.pocoo.org
