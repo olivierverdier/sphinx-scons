@@ -1,0 +1,7 @@
+.. README file for sphinx-scons, in -*- rst -*- mode.
+
+This package contains ``SConstruct``, a generic SCons_ build file for
+building Sphinx_ documentation.
+
+.. _SCons: http://www.scons.org
+.. _Sphinx: http://sphinx.pocoo.org
