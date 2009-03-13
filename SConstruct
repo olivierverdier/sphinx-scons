@@ -1,8 +1,11 @@
 ### Generic SCons script for building Sphinx documentation.
 
-# Author: Glenn Hutchings (zondo42@googlemail.com).
-# License: BSD
-# Version: 0.1
+# Script info.
+__author__  = "Glenn Hutchings"
+__email__   = "zondo42@googlemail.com"
+__url__     = "http://bitbucket.org/zondo/sphinx-scons"
+__license__ = "BSD"
+__version__ = "0.2"
 
 import os
 
@@ -33,7 +36,9 @@ options = (
 default = "html"
 
 # Initialize help text.
-help_usage = "Usage: scons [options] [target]\n"
+help_script = "SCons builder for Sphinx, version %s" % __version__
+help_usage  = "Usage: scons [options] [targets]\n"
+help_format = "   %-10s  %s"
 
 # Set option values from arguments.
 optvalues = {}
@@ -44,12 +49,22 @@ help_options.append("\n\nOptions (set by name=value):\n")
 for name, value, desc in options:
     optvalues[name] = ARGUMENTS.get(name, value)
     if value: desc += " (default: %s)" % value
-    help_options.append("   %-10s  %s" % (name, desc))
+    help_options.append(help_format % (name, desc))
 
 # Put doctrees in build dir unless otherwise specified.
 if not optvalues["doctrees"]:
     builddir = optvalues["builddir"]
     optvalues["doctrees"] = os.path.join(builddir, "doctrees")
+
+# Get parameters from Sphinx config file.
+configfile = optvalues["config"]
+try:
+    execfile(configfile)
+    help_project = "This is %(project)s %(release)s, copyright %(copyright)s" \
+                   % locals()
+except IOError:
+    print "can't find Sphinx config file '%s'" % configfile
+    Exit(1)
 
 # Build sphinx command-line options.
 sphinxopts = []
@@ -75,16 +90,19 @@ help_targets.append("\nAvailable targets:\n")
 for name, desc in targets:
     target = Dir(name, builddir)
 
-    env.Command(target, optvalues["config"], sphinxcmd % name)
+    env.Command(target, configfile, sphinxcmd % name)
     env.AlwaysBuild(target)
     env.Alias(name, target)
     env.Clean(name, [target])
 
     if name == default: desc += " (default)"
-    help_targets.append("   %-10s  %s" % (name, desc))
+    help_targets.append(help_format % (name, desc))
 
 # Set the default target.
 Default(default)
 
 # Set final help text.
-Help(help_usage + "\n".join(help_targets) + "\n".join(help_options) + "\n")
+Help("\n\n".join([help_project, help_script, help_usage]) +
+     "\n".join(help_targets) +
+     "\n".join(help_options) +
+     "\n")
