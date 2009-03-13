@@ -60,11 +60,19 @@ if not optvalues["doctrees"]:
 configfile = optvalues["config"]
 try:
     execfile(configfile)
-    help_project = "This is %(project)s %(release)s, copyright %(copyright)s" \
-                   % locals()
 except IOError:
     print "can't find Sphinx config file '%s'" % configfile
     Exit(1)
+
+# Build project help string.
+help_project = "%(project)s, release %(release)s, " \
+               "copyright %(copyright)s" % locals()
+
+# Maybe print it now.
+if not GetOption("silent") and not GetOption("help"):
+    print
+    print "This is", help_project
+    print
 
 # Build sphinx command-line options.
 sphinxopts = []
