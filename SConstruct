@@ -109,7 +109,9 @@ sphinxcmd = """
 %(builder)s -b %%s -d %(doctrees)s %(options)s %(srcdir)s $TARGET
 """.strip() % locals()
 
-# Add standard sphinx targets.
+# Add build targets.
+Default(default)
+
 Help("Available targets:\n\n")
 
 for name, desc in targets:
@@ -119,12 +121,12 @@ for name, desc in targets:
     env.AlwaysBuild(target)
     env.Alias(name, target)
     env.Clean(name, [target])
+    env.Clean('all', target)
 
     if name == default: desc += " (default)"
     Help("   %-10s  %s\n" % (name, desc))
 
-# Set the default target.
-Default(default)
+Clean('all', doctrees)
 
 # Add config settings to help.
 Help("\nConfiguration variables:")
