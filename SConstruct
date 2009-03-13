@@ -72,7 +72,7 @@ builder = env["builder"]
 options = env.get("options", None)
 
 paper = env.get("paper", None)
-tags = env.get("tags", [])
+tags = env.get("tags", None)
 
 # Get parameters from Sphinx config file.
 sphinxparams = {}
@@ -93,13 +93,14 @@ if not GetOption("silent") and not GetOption("help"):
 # Build sphinx command-line options.
 opts = []
 
-if options:
-    opts.append(options)
-
-opts.extend(["-t %s" % tag for tag in tags.split(",")])
+if tags:
+    opts.extend(["-t %s" % tag for tag in tags.split(",")])
 
 if paper:
     opts.append("-D latex_paper_size=%s" % paper)
+
+if options:
+    opts.append(options)
 
 options = " ".join(opts)
 
