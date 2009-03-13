@@ -1,4 +1,6 @@
-### Generic SCons script for building Sphinx documentation.
+"""
+This is a generic SCons script for running Sphinx (http://sphinx.pocoo.org).
+"""
 
 # Script info.
 __author__  = "Glenn Hutchings"
@@ -23,50 +25,56 @@ targets = (
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
 )
 
-# Options.
-options = (
-    ("config",    "conf.py", "sphinx configuration file"),
-    ("srcdir",    ".",       "source directory"),
-    ("builddir",  "_build",  "build directory"),
-    ("doctrees",  None,      "doctrees directory (default: in build dir)"),
-    ("paper",     None,      "LaTeX paper size (a4 or letter)"),
+# File containing configuration variables.
+cachefile = "SConstruct.cache"
+
+# Configuration variables.
+config = Variables(cachefile, ARGUMENTS)
+
+config.AddVariables(
+    PathVariable("config", "sphinx configuration file", "conf.py"),
+
+    PathVariable("srcdir", "source directory", ".",
+                 PathVariable.PathIsDir),
+
+    PathVariable("builddir", "build directory", "_build",
+                 PathVariable.PathIsDirCreate),
+
+    PathVariable("doctrees",  "place to put doctrees", None,
+                 PathVariable.PathAccept),
+
+    EnumVariable("paper", "LaTeX paper size", None,
+                 ["a4", "letter"], ignorecase = False),
 )
 
 # Default target.
 default = "html"
 
-# Initialize help text.
-help_script = "SCons builder for Sphinx, version %s" % __version__
-help_usage  = "Usage: scons [options] [targets]\n"
-help_format = "   %-10s  %s"
+# Create a new environment, inheriting PATH to find sphinx-build.
+env = Environment(ENV = {"PATH" : os.environ["PATH"]},
+                  variables = config)
 
-# Set option values from arguments.
-optvalues = {}
-
-help_options = []
-help_options.append("\n\nOptions (set by name=value):\n")
-
-for name, value, desc in options:
-    optvalues[name] = ARGUMENTS.get(name, value)
-    if value: desc += " (default: %s)" % value
-    help_options.append(help_format % (name, desc))
-
-# Put doctrees in build dir unless otherwise specified.
-if not optvalues["doctrees"]:
-    builddir = optvalues["builddir"]
-    optvalues["doctrees"] = os.path.join(builddir, "doctrees")
+# Get configuration values from environment.
+sphinxconf = env["config"]
+srcdir = env["srcdir"]
+builddir = env["builddir"]
+doctrees = env.get("doctrees", os.path.join(builddir, "doctrees"))
+paper = env.get("paper", None)
 
 # Get parameters from Sphinx config file.
-configfile = optvalues["config"]
 try:
-    execfile(configfile)
-except IOError:
-    print "can't find Sphinx config file '%s'" % configfile
+    execfile(sphinxconf)
+except:
+    print "Problem in Sphinx config file '%s'" % sphinxconf
     Exit(1)
 
 # Build project help string.
 help_project = "%(project)s, release %(release)s, " \
                "copyright %(copyright)s" % locals()
+
+Help(help_project + "\n\n")
+
+Help("SCons builder for Sphinx, version %s\n\n" % __version__)
 
 # Maybe print it now.
 if not GetOption("silent") and not GetOption("help"):
@@ -75,42 +83,39 @@ if not GetOption("silent") and not GetOption("help"):
     print
 
 # Build sphinx command-line options.
-sphinxopts = []
+opts = []
 
-if optvalues["paper"]:
-    sphinxopts.append("-D latex_paper_size=%s" % optvalues["paper"])
+if paper:
+    opts.append("-D latex_paper_size=%s" % paper)
 
-optvalues["sphinxopts"] = " ".join(sphinxopts)
+sphinxopts = " ".join(opts)
 
 # Build Sphinx command template.
 sphinxcmd = """
 sphinx-build -b %%s -d %(doctrees)s %(sphinxopts)s %(srcdir)s $TARGET
-""".strip() % optvalues
-
-# Create a new environment, inheriting all env variables (probably only
-# need PATH, to find sphinx-build).
-env = Environment(ENV = os.environ)
+""".strip() % locals()
 
 # Add standard sphinx targets.
-help_targets = []
-help_targets.append("\nAvailable targets:\n")
+Help("Available targets:\n\n")
 
 for name, desc in targets:
     target = Dir(name, builddir)
 
-    env.Command(target, configfile, sphinxcmd % name)
+    env.Command(target, sphinxconf, sphinxcmd % name)
     env.AlwaysBuild(target)
     env.Alias(name, target)
     env.Clean(name, [target])
 
     if name == default: desc += " (default)"
-    help_targets.append(help_format % (name, desc))
+    Help("   %-10s  %s\n" % (name, desc))
 
 # Set the default target.
 Default(default)
 
-# Set final help text.
-Help("\n\n".join([help_project, help_script, help_usage]) +
-     "\n".join(help_targets) +
-     "\n".join(help_options) +
-     "\n")
+# Add config settings to help.
+Help("\nConfiguration variables:\n")
+Help(config.GenerateHelpText(env))
+
+# Save build configuration.
+config.Update(env)
+config.Save(cachefile, env)
