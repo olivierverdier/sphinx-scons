@@ -63,23 +63,24 @@ paper = env.get("paper", None)
 
 # Get parameters from Sphinx config file.
 try:
-    execfile(sphinxconf)
+    sphinxparams = {}
+    execfile(sphinxconf, sphinxparams)
 except:
     print "Problem in Sphinx config file '%s'" % sphinxconf
     Exit(1)
 
-# Build project help string.
-help_project = "%(project)s, release %(release)s, " \
-               "copyright %(copyright)s" % locals()
+# Build project description string.
+description = "%(project)s, release %(release)s, " \
+               "copyright %(copyright)s" % sphinxparams
 
-Help(help_project + "\n\n")
+Help(description + "\n\n")
 
 Help("SCons builder for Sphinx, version %s\n\n" % __version__)
 
 # Maybe print it now.
 if not GetOption("silent") and not GetOption("help"):
     print
-    print "This is", help_project
+    print "This is", description
     print
 
 # Build sphinx command-line options.
