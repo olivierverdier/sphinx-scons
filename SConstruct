@@ -62,12 +62,8 @@ doctrees = env.get("doctrees", os.path.join(builddir, "doctrees"))
 paper = env.get("paper", None)
 
 # Get parameters from Sphinx config file.
-try:
-    sphinxparams = {}
-    execfile(sphinxconf, sphinxparams)
-except:
-    print "Problem in Sphinx config file '%s'" % sphinxconf
-    Exit(1)
+sphinxparams = {}
+execfile(sphinxconf, sphinxparams)
 
 # Build project description string.
 description = "%(project)s, release %(release)s, " \
