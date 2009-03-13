@@ -114,7 +114,8 @@ Default(default)
 
 # Add config settings to help.
 Help("\nConfiguration variables:\n")
-Help(config.GenerateHelpText(env))
+for line in config.GenerateHelpText(env).split("\n"):
+    Help("   " + line + "\n")
 
 # Save build configuration.
 config.Update(env)
