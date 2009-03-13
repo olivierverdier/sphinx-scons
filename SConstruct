@@ -25,30 +25,36 @@ targets = (
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
 )
 
-# File containing configuration variables.
-cachefile = "SConstruct.cache"
+# Configuration cache file.
+cachefile = "conf-scons.py"
 
 # Configuration variables.
 config = Variables(cachefile, ARGUMENTS)
 
 config.AddVariables(
+    EnumVariable("default", "default build target", "html",
+                 [name for name, desc in targets]),
+
     PathVariable("config", "sphinx configuration file", "conf.py"),
 
     PathVariable("srcdir", "source directory", ".",
                  PathVariable.PathIsDir),
 
-    PathVariable("builddir", "build directory", "_build",
+    PathVariable("builddir", "build directory", "build",
                  PathVariable.PathIsDirCreate),
 
-    PathVariable("doctrees",  "place to put doctrees", None,
+    PathVariable("doctrees", "place to put doctrees", None,
                  PathVariable.PathAccept),
 
     EnumVariable("paper", "LaTeX paper size", None,
                  ["a4", "letter"], ignorecase = False),
-)
 
-# Default target.
-default = "html"
+    ("tags", "comma-separated list of 'only' tags", None),
+    ("builder", "program to run to build things", "sphinx-build"),
+    ("options", "extra Sphinx options to use", None),
+
+    BoolVariable("cache", "whether to cache variables", False),
+)
 
 # Create a new environment, inheriting PATH to find sphinx-build.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
@@ -56,10 +62,17 @@ env = Environment(ENV = {"PATH" : os.environ["PATH"]},
 
 # Get configuration values from environment.
 sphinxconf = env["config"]
+default = env["default"]
+
 srcdir = env["srcdir"]
 builddir = env["builddir"]
 doctrees = env.get("doctrees", os.path.join(builddir, "doctrees"))
+
+builder = env["builder"]
+options = env.get("options", None)
+
 paper = env.get("paper", None)
+tags = env.get("tags", [])
 
 # Get parameters from Sphinx config file.
 sphinxparams = {}
@@ -71,9 +84,7 @@ description = "%(project)s, release %(release)s, " \
 
 Help(description + "\n\n")
 
-Help("SCons builder for Sphinx, version %s\n\n" % __version__)
-
-# Maybe print it now.
+# Maybe print introduction.
 if not GetOption("silent") and not GetOption("help"):
     print
     print "This is", description
@@ -82,14 +93,19 @@ if not GetOption("silent") and not GetOption("help"):
 # Build sphinx command-line options.
 opts = []
 
+if options:
+    opts.append(options)
+
+opts.extend(["-t %s" % tag for tag in tags.split(",")])
+
 if paper:
     opts.append("-D latex_paper_size=%s" % paper)
 
-sphinxopts = " ".join(opts)
+options = " ".join(opts)
 
 # Build Sphinx command template.
 sphinxcmd = """
-sphinx-build -b %%s -d %(doctrees)s %(sphinxopts)s %(srcdir)s $TARGET
+%(builder)s -b %%s -d %(doctrees)s %(options)s %(srcdir)s $TARGET
 """.strip() % locals()
 
 # Add standard sphinx targets.
@@ -110,10 +126,11 @@ for name, desc in targets:
 Default(default)
 
 # Add config settings to help.
-Help("\nConfiguration variables:\n")
+Help("\nConfiguration variables:")
 for line in config.GenerateHelpText(env).split("\n"):
-    Help("   " + line + "\n")
+    Help("\n   " + line)
 
 # Save build configuration.
-config.Update(env)
-config.Save(cachefile, env)
+if cachefile:
+    config.Update(env)
+    config.Save(cachefile, env)
