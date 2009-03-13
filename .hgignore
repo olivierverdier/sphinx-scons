@@ -1,3 +1,4 @@
 syntax: glob
 
-_build/
+build/
+conf-scons.py
