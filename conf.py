@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'sphinx-scons'
+project = u'sphinx scons'
 copyright = u'2009, Glenn Hutchings'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -45,7 +45,7 @@ copyright = u'2009, Glenn Hutchings'
 # built documents.
 #
 # The short X.Y version.
-version = "whatever"
+version = "X.Y"
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -64,7 +64,7 @@ release = version
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build']
+exclude_trees = ['build']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
