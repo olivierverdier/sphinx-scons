@@ -54,6 +54,8 @@ config.AddVariables(
     ("options", "extra Sphinx options to use", None),
 
     BoolVariable("cache", "whether to cache variables", False),
+
+    BoolVariable("debug", "debugging flag", False),
 )
 
 # Create a new environment, inheriting PATH to find sphinx-build.
@@ -73,6 +75,11 @@ options = env.get("options", None)
 
 paper = env.get("paper", None)
 tags = env.get("tags", None)
+
+debug = env["debug"]
+
+if debug:
+    print "Environment:", env.Dump()
 
 # Get parameters from Sphinx config file.
 sphinxparams = {}
@@ -110,8 +117,6 @@ sphinxcmd = """
 """.strip() % locals()
 
 # Add build targets.
-Default(default)
-
 Help("Available targets:\n\n")
 
 for name, desc in targets:
@@ -127,6 +132,7 @@ for name, desc in targets:
     Help("   %-10s  %s\n" % (name, desc))
 
 Clean('all', doctrees)
+Default(default)
 
 # Add config settings to help.
 Help("\nConfiguration variables:")
