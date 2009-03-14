@@ -25,6 +25,9 @@ targets = (
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
 )
 
+# List of target names.
+targetnames = [name for name, desc in targets]
+
 # Configuration cache file.
 cachefile = "conf-scons.py"
 
@@ -32,34 +35,29 @@ cachefile = "conf-scons.py"
 config = Variables(cachefile, ARGUMENTS)
 
 config.AddVariables(
-    EnumVariable("default", "default build target", "html",
-                 [name for name, desc in targets]),
-
+    EnumVariable("default", "default build target", "html", targetnames),
     PathVariable("config", "sphinx configuration file", "conf.py"),
-
     PathVariable("srcdir", "source directory", ".",
                  PathVariable.PathIsDir),
-
     PathVariable("builddir", "build directory", "build",
                  PathVariable.PathIsDirCreate),
-
     PathVariable("doctrees", "place to put doctrees", None,
                  PathVariable.PathAccept),
-
+    ListVariable("install", "targets to install", ["html"], targetnames),
+    PathVariable("instdir", "installation directory", "/usr/local/doc",
+                 PathVariable.PathIsDirCreate),
     EnumVariable("paper", "LaTeX paper size", None,
                  ["a4", "letter"], ignorecase = False),
-
     ("tags", "comma-separated list of 'only' tags", None),
     ("builder", "program to run to build things", "sphinx-build"),
-    ("options", "extra Sphinx options to use", None),
-
+    ("opts", "extra builder options to use", None),
     BoolVariable("cache", "whether to cache variables", False),
-
     BoolVariable("debug", "debugging flag", False),
 )
 
 # Create a new environment, inheriting PATH to find sphinx-build.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
+                  tools = ['default', 'packaging'],
                   variables = config)
 
 # Get configuration values from environment.
@@ -69,30 +67,41 @@ default = env["default"]
 srcdir = env["srcdir"]
 builddir = env["builddir"]
 doctrees = env.get("doctrees", os.path.join(builddir, "doctrees"))
-
+instdir = env["instdir"]
+install = env["install"]
 builder = env["builder"]
-options = env.get("options", None)
+cache = env["cache"]
+debug = env["debug"]
 
+options = env.get("opts", None)
 paper = env.get("paper", None)
 tags = env.get("tags", None)
 
-debug = env["debug"]
-
 if debug:
-    print "Environment:", env.Dump()
+    print "Environment:"
+    print env.Dump()
+
+verbose = not GetOption("silent") and not GetOption("help")
 
 # Get parameters from Sphinx config file.
 sphinxparams = {}
 execfile(sphinxconf, sphinxparams)
 
+project = sphinxparams["project"]
+release = sphinxparams["release"]
+copyright = sphinxparams["copyright"]
+
+project_tag = project.replace(" ", "-")
+package_tag = project_tag + "-" + release
+
 # Build project description string.
 description = "%(project)s, release %(release)s, " \
-               "copyright %(copyright)s" % sphinxparams
+               "copyright %(copyright)s" % locals()
 
 Help(description + "\n\n")
 
 # Maybe print introduction.
-if not GetOption("silent") and not GetOption("help"):
+if verbose:
     print
     print "This is", description
     print
@@ -134,12 +143,30 @@ for name, desc in targets:
 Clean('all', doctrees)
 Default(default)
 
+# Add installation targets.
+projectdir = os.path.join(instdir, project_tag)
+
+for name in install:
+    source = Dir(name, builddir)
+    inst = env.Install(projectdir, source)
+    env.Alias('install', inst)
+
+    pattern = os.path.join(str(source), '*')
+    for node in env.Glob(pattern):
+        filename = str(node).replace(builddir + os.path.sep, "")
+        dirname = os.path.dirname(filename)
+        dest = os.path.join(projectdir, dirname)
+        inst = env.Install(dest, node)
+        env.Alias('install', inst)
+
+env.Command('uninstall', None, Delete(projectdir))
+
 # Add config settings to help.
 Help("\nConfiguration variables:")
 for line in config.GenerateHelpText(env).split("\n"):
     Help("\n   " + line)
 
 # Save build configuration.
-if cachefile:
+if cache:
     config.Update(env)
     config.Save(cachefile, env)
