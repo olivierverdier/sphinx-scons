@@ -11,7 +11,7 @@ __version__ = "0.2"
 
 import os
 
-# Sphinx targets.
+# Build targets.
 targets = (
     ("html",      "make standalone HTML files"),
     ("dirhtml",   "make HTML files named index.html in directories"),
@@ -19,11 +19,16 @@ targets = (
     ("json",      "make JSON files"),
     ("htmlhelp",  "make HTML files and a HTML help project"),
     ("qthelp",    "make HTML files and a qthelp project"),
-    ("latex",     "make LaTeX files"),
+    ("latex",     "make LaTeX sources"),
+    ("pdf",       "make PDF file from LaTeX sources"),
+    ("ps",        "make PostScript file from LaTeX sources"),
     ("changes",   "make an overview over all changed/added/deprecated items"),
     ("linkcheck", "check all external links for integrity"),
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
 )
+
+# LaTeX builders.
+latex_builders = {"pdf": "PDF", "ps": "PostScript"}
 
 # List of target names.
 targetnames = [name for name, desc in targets]
@@ -59,7 +64,7 @@ config.AddVariables(
 
 # Create a new environment, inheriting PATH to find builder program.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
-                  tools = ['default', 'packaging'],
+                  TEX = "latex", tools = ['default', 'packaging'],
                   variables = config)
 
 # Get configuration values from environment.
@@ -128,18 +133,29 @@ options = " ".join(opts)
 
 # Build Sphinx command template.
 sphinxcmd = """
-%(builder)s -b %(name)s -d %(doctrees)s %(options)s %(srcdir)s $TARGET
+%(builder)s -b %(name)s -d %(doctrees)s %(options)s %(srcdir)s %(targetdir)s
 """.strip()
 
 # Add build targets.
 Help("Build targets:\n\n")
 
+latexdir = Dir("latex", builddir)
+texfile = File(project_tag + ".tex", latexdir)
+env.SideEffect(texfile, "latex")
+env.Alias("texfile", texfile)
+
 for name, desc in targets:
     target = Dir(name, builddir)
+    targetdir = str(target)
 
-    env.Command(target, sphinxconf, sphinxcmd % locals())
-    env.AlwaysBuild(target)
-    env.Alias(name, target)
+    if name in latex_builders:
+        outfile = File(project_tag + "." + name, latexdir)
+        getattr(env, latex_builders[name])(outfile, texfile)
+        env.Alias(name, outfile)
+    else:
+        env.Command(name, sphinxconf, sphinxcmd % locals())
+        env.AlwaysBuild(name)
+
     env.Clean(name, [target])
     env.Clean('all', target)
 
@@ -148,18 +164,6 @@ for name, desc in targets:
 
 Clean('all', doctrees)
 Default(default)
-
-# Add special PDF target.
-latexdir = Dir("latex", builddir)
-pdfdir = Dir("pdf", builddir)
-pdffile = File(project_tag + ".pdf", pdfdir)
-texfile = File(project_tag + ".tex", latexdir)
-
-env.PDF(pdffile, texfile)
-env.Alias("pdf", pdffile)
-env.Requires(texfile, latexdir)
-
-Help(help_format % ("pdf", "make PDF file from LaTeX sources"))
 
 # Add installation targets and collect package sources.
 Help("\nOther targets:\n\n")
