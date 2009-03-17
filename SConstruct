@@ -52,7 +52,7 @@ config.AddVariables(
     PathVariable("instdir", "installation directory", "/usr/local/doc",
                  PathVariable.PathIsDirCreate),
     EnumVariable("pkgtype", "package type to build with 'scons package'",
-                 "zip", ["zip", "targz"], ignorecase = False),
+                 "zip", ["zip", "targz", "tarbz2"], ignorecase = False),
     BoolVariable("cache", "whether to cache variables", False),
     BoolVariable("debug", "debugging flag", False),
 )
@@ -104,6 +104,7 @@ description = "%(project)s, release %(release)s, " \
                "copyright %(copyright)s" % locals()
 
 Help(description + "\n\n")
+help_format = "   %-10s  %s\n"
 
 # Maybe print introduction.
 if verbose:
@@ -131,7 +132,7 @@ sphinxcmd = """
 """.strip() % locals()
 
 # Add build targets.
-Help("Available targets:\n\n")
+Help("Build targets:\n\n")
 
 for name, desc in targets:
     target = Dir(name, builddir)
@@ -143,12 +144,15 @@ for name, desc in targets:
     env.Clean('all', target)
 
     if name == default: desc += " (default)"
-    Help("   %-10s  %s\n" % (name, desc))
+    Help(help_format % (name, desc))
 
 Clean('all', doctrees)
 Default(default)
 
 # Add installation targets and collect package sources.
+Help("\nOther targets:\n\n")
+
+Help(help_format % ("install", "install documentation"))
 projectdir = os.path.join(instdir, project_tag)
 sources = []
 
@@ -167,6 +171,7 @@ for name in install:
         env.Alias('install', inst)
 
 env.Command('uninstall', None, Delete(projectdir))
+Help(help_format % ("uninstall", "uninstall documentation"))
 
 # Add package builder.
 packageroot = "%s-%s" % (project_tag, release)
@@ -177,6 +182,8 @@ archive, package = env.Package(NAME = project_tag, VERSION = release,
 
 env.AlwaysBuild(archive)
 env.AddPostAction(archive, Delete(packageroot))
+Help(help_format % ("package", "build documentation package"))
+
 env.Clean('all', archive)
 
 # Add config settings to help.
