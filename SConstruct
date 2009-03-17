@@ -9,7 +9,7 @@ __url__     = "http://bitbucket.org/zondo/sphinx-scons"
 __license__ = "BSD"
 __version__ = "0.2"
 
-import os
+import sys, os
 
 # Build targets.
 targets = (
@@ -22,13 +22,14 @@ targets = (
     ("latex",     "make LaTeX sources"),
     ("pdf",       "make PDF file from LaTeX sources"),
     ("ps",        "make PostScript file from LaTeX sources"),
+    ("dvi",       "make DVI file from LaTeX sources"),
     ("changes",   "make an overview over all changed/added/deprecated items"),
     ("linkcheck", "check all external links for integrity"),
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
 )
 
 # LaTeX builders.
-latex_builders = {"pdf": "PDF", "ps": "PostScript"}
+latex_builders = {"pdf": "PDF", "ps": "PostScript", "dvi": "DVI"}
 
 # List of target names.
 targetnames = [name for name, desc in targets]
@@ -64,7 +65,8 @@ config.AddVariables(
 
 # Create a new environment, inheriting PATH to find builder program.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
-                  TEX = "latex", tools = ['default', 'packaging'],
+                  TEX = "latex", PDFTEX = "pdflatex",
+                  tools = ['default', 'packaging'],
                   variables = config)
 
 # Get configuration values from environment.
@@ -91,8 +93,6 @@ if debug:
     print "Environment:"
     print env.Dump()
 
-verbose = not GetOption("silent") and not GetOption("help")
-
 # Get parameters from Sphinx config file.
 sphinxparams = {}
 execfile(sphinxconf, sphinxparams)
@@ -111,8 +111,8 @@ description = "%(project)s, release %(release)s, " \
 Help(description + "\n\n")
 help_format = "   %-10s  %s\n"
 
-# Maybe print introduction.
-if verbose:
+# Print banner if required.
+if not any(map(GetOption, ("silent", "clean", "help"))):
     print
     print "This is", description
     print
@@ -142,19 +142,24 @@ Help("Build targets:\n\n")
 latexdir = Dir("latex", builddir)
 texfile = File(project_tag + ".tex", latexdir)
 env.SideEffect(texfile, "latex")
-env.Alias("texfile", texfile)
 
 for name, desc in targets:
     target = Dir(name, builddir)
     targetdir = str(target)
 
-    if name in latex_builders:
-        outfile = File(project_tag + "." + name, latexdir)
-        getattr(env, latex_builders[name])(outfile, texfile)
-        env.Alias(name, outfile)
-    else:
+    if name not in latex_builders:
         env.Command(name, sphinxconf, sphinxcmd % locals())
         env.AlwaysBuild(name)
+    else:
+        filename = project_tag + "." + name
+
+        outfile = File(filename, latexdir)
+        getattr(env, latex_builders[name])(outfile, texfile)
+
+        destfile = File(filename, target)
+        env.Command(destfile, outfile, Move(destfile, outfile))
+
+        env.Alias(name, destfile)
 
     env.Clean(name, [target])
     env.Clean('all', target)
