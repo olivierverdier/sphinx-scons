@@ -43,39 +43,44 @@ config.AddVariables(
                  PathVariable.PathIsDirCreate),
     PathVariable("doctrees", "place to put doctrees", None,
                  PathVariable.PathAccept),
-    ListVariable("install", "targets to install", ["html"], targetnames),
-    PathVariable("instdir", "installation directory", "/usr/local/doc",
-                 PathVariable.PathIsDirCreate),
     EnumVariable("paper", "LaTeX paper size", None,
                  ["a4", "letter"], ignorecase = False),
     ("tags", "comma-separated list of 'only' tags", None),
     ("builder", "program to run to build things", "sphinx-build"),
     ("opts", "extra builder options to use", None),
+    ListVariable("install", "targets to install", ["html"], targetnames),
+    PathVariable("instdir", "installation directory", "/usr/local/doc",
+                 PathVariable.PathIsDirCreate),
+    EnumVariable("pkgtype", "package type to build with 'scons package'",
+                 "zip", ["zip", "targz"], ignorecase = False),
     BoolVariable("cache", "whether to cache variables", False),
     BoolVariable("debug", "debugging flag", False),
 )
 
-# Create a new environment, inheriting PATH to find sphinx-build.
+# Create a new environment, inheriting PATH to find builder program.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
                   tools = ['default', 'packaging'],
                   variables = config)
 
 # Get configuration values from environment.
 sphinxconf = env["config"]
+builder = env["builder"]
 default = env["default"]
 
 srcdir = env["srcdir"]
 builddir = env["builddir"]
 doctrees = env.get("doctrees", os.path.join(builddir, "doctrees"))
-instdir = env["instdir"]
-install = env["install"]
-builder = env["builder"]
+
 cache = env["cache"]
 debug = env["debug"]
 
 options = env.get("opts", None)
 paper = env.get("paper", None)
 tags = env.get("tags", None)
+
+instdir = env["instdir"]
+install = env["install"]
+pkgtype = env["pkgtype"]
 
 if debug:
     print "Environment:"
@@ -143,16 +148,18 @@ for name, desc in targets:
 Clean('all', doctrees)
 Default(default)
 
-# Add installation targets.
+# Add installation targets and collect package sources.
 projectdir = os.path.join(instdir, project_tag)
+sources = []
 
 for name in install:
     source = Dir(name, builddir)
+    sources.append(source)
+
     inst = env.Install(projectdir, source)
     env.Alias('install', inst)
 
-    pattern = os.path.join(str(source), '*')
-    for node in env.Glob(pattern):
+    for node in env.Glob(os.path.join(str(source), '*')):
         filename = str(node).replace(builddir + os.path.sep, "")
         dirname = os.path.dirname(filename)
         dest = os.path.join(projectdir, dirname)
@@ -160,6 +167,17 @@ for name in install:
         env.Alias('install', inst)
 
 env.Command('uninstall', None, Delete(projectdir))
+
+# Add package builder.
+packageroot = "%s-%s" % (project_tag, release)
+archive, package = env.Package(NAME = project_tag, VERSION = release,
+                               PACKAGEROOT = packageroot,
+                               PACKAGETYPE = pkgtype,
+                               source = sources)
+
+env.AlwaysBuild(archive)
+env.AddPostAction(archive, Delete(packageroot))
+env.Clean('all', archive)
 
 # Add config settings to help.
 Help("\nConfiguration variables:")
