@@ -128,8 +128,8 @@ options = " ".join(opts)
 
 # Build Sphinx command template.
 sphinxcmd = """
-%(builder)s -b %%s -d %(doctrees)s %(options)s %(srcdir)s $TARGET
-""".strip() % locals()
+%(builder)s -b %(name)s -d %(doctrees)s %(options)s %(srcdir)s $TARGET
+""".strip()
 
 # Add build targets.
 Help("Build targets:\n\n")
@@ -137,7 +137,7 @@ Help("Build targets:\n\n")
 for name, desc in targets:
     target = Dir(name, builddir)
 
-    env.Command(target, sphinxconf, sphinxcmd % name)
+    env.Command(target, sphinxconf, sphinxcmd % locals())
     env.AlwaysBuild(target)
     env.Alias(name, target)
     env.Clean(name, [target])
@@ -148,6 +148,18 @@ for name, desc in targets:
 
 Clean('all', doctrees)
 Default(default)
+
+# Add special PDF target.
+latexdir = Dir("latex", builddir)
+pdfdir = Dir("pdf", builddir)
+pdffile = File(project_tag + ".pdf", pdfdir)
+texfile = File(project_tag + ".tex", latexdir)
+
+env.PDF(pdffile, texfile)
+env.Alias("pdf", pdffile)
+env.Requires(texfile, latexdir)
+
+Help(help_format % ("pdf", "make PDF file from LaTeX sources"))
 
 # Add installation targets and collect package sources.
 Help("\nOther targets:\n\n")
@@ -170,11 +182,12 @@ for name in install:
         inst = env.Install(dest, node)
         env.Alias('install', inst)
 
+# Add uninstall target.
 env.Command('uninstall', None, Delete(projectdir))
 Help(help_format % ("uninstall", "uninstall documentation"))
 
 # Add package builder.
-packageroot = "%s-%s" % (project_tag, release)
+packageroot = "-".join([project_tag, release])
 archive, package = env.Package(NAME = project_tag, VERSION = release,
                                PACKAGEROOT = packageroot,
                                PACKAGETYPE = pkgtype,
@@ -191,7 +204,7 @@ Help("\nConfiguration variables:")
 for line in config.GenerateHelpText(env).split("\n"):
     Help("\n   " + line)
 
-# Save build configuration.
+# Save build configuration if required.
 if cache:
     config.Update(env)
     config.Save(cachefile, env)
