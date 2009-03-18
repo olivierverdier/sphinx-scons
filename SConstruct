@@ -34,11 +34,15 @@ latex_builders = {"pdf": "PDF", "ps": "PostScript", "dvi": "DVI"}
 # List of target names.
 targetnames = [name for name, desc in targets]
 
-# Configuration cache file.
-cachefile = "conf-scons.py"
+# Configuration cache filename.
+cachefile = ".sphinx-sconsrc"
+
+# User cache file.
+homedir = os.environ["HOME"]
+usercache = os.path.join(homedir, cachefile)
 
 # Configuration variables.
-config = Variables(cachefile, ARGUMENTS)
+config = Variables([usercache, cachefile], ARGUMENTS)
 
 config.AddVariables(
     EnumVariable("default", "default build target", "html", targetnames),
@@ -102,7 +106,7 @@ release = sphinxparams["release"]
 copyright = sphinxparams["copyright"]
 
 project_tag = project.replace(" ", "-")
-package_tag = project_tag + "-" + release
+package_tag = project_tag.lower() + "-" + release
 
 # Build project description string.
 description = "%(project)s, release %(release)s, " \
@@ -213,7 +217,7 @@ Help("\nConfiguration variables:")
 for line in config.GenerateHelpText(env).split("\n"):
     Help("\n   " + line)
 
-# Save build configuration if required.
+# Save local configuration if required.
 if cache:
     config.Update(env)
     config.Save(cachefile, env)
