@@ -35,7 +35,7 @@ latex_builders = {"pdf": "PDF", "ps": "PostScript", "dvi": "DVI"}
 targetnames = [name for name, desc in targets]
 
 # Configuration cache filename.
-cachefile = ".sphinx-sconsrc"
+cachefile = ".sconsrc-sphinx"
 
 # User cache file.
 homedir = os.environ["HOME"]
