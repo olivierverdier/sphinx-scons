@@ -108,7 +108,12 @@ project = sphinxparams["project"]
 release = sphinxparams["release"]
 copyright = sphinxparams["copyright"]
 
-project_tag = project.replace(" ", "-")
+try:
+    texfilename = sphinxparams["latex_documents"][0][1]
+except KeyError:
+    texfilename = None
+
+project_tag = project.replace(" ", "-").strip("()")
 package_tag = project_tag.lower() + "-" + release
 
 # Build project description string.
@@ -143,13 +148,15 @@ sphinxcmd = """
 %(builder)s -b %(name)s -d %(doctrees)s %(options)s %(srcdir)s %(targetdir)s
 """.strip()
 
+# Set up LaTeX input builder if required.
+if texfilename:
+    latexdir = Dir("latex", builddir)
+    texinput = File(texfilename, latexdir)
+    env.SideEffect(texinput, "latex")
+    env.NoClean(texinput)
+
 # Add build targets.
 Help("Build targets:\n\n")
-
-latexdir = Dir("latex", builddir)
-texfile = File(project_tag + ".tex", latexdir)
-env.SideEffect(texfile, "latex")
-env.NoClean(texfile)
 
 for name, desc in targets:
     target = Dir(name, builddir)
@@ -160,7 +167,7 @@ for name, desc in targets:
         env.Command(name, sphinxconf, sphinxcmd % locals())
         env.AlwaysBuild(name)
         env.Alias(target, name)
-    else:
+    elif texinput:
         # Target built from LaTeX sources.
         try:
             buildfunc = getattr(env, latex_builders[name])
@@ -170,13 +177,15 @@ for name, desc in targets:
         filename = project_tag + "." + name
         outfile = File(filename, latexdir)
 
-        buildfunc(outfile, texfile)
+        buildfunc(outfile, texinput)
 
         # Copy built file to separate directory.
         target = File(filename, target)
         env.Command(target, outfile, Move(target, outfile))
 
         env.Alias(name, target)
+    else:
+        continue
 
     env.Clean(name, [target])
     env.Clean('all', target)
