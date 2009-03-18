@@ -158,10 +158,14 @@ for name, desc in targets:
         env.Alias(target, name)
     else:
         filename = project_tag + "." + name
-
         outfile = File(filename, latexdir)
-        getattr(env, latex_builders[name])(outfile, texfile)
 
+        try:
+            buildfunc = getattr(env, latex_builders[name])
+        except AttributeError:
+            continue
+
+        buildfunc(outfile, texfile)
         destfile = File(filename, target)
         env.Command(destfile, outfile, Move(destfile, outfile))
 
