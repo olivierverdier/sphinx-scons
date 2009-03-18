@@ -63,7 +63,7 @@ config.AddVariables(
                  PathVariable.PathIsDirCreate),
     EnumVariable("pkgtype", "package type to build with 'scons package'",
                  "zip", ["zip", "targz", "tarbz2"], ignorecase = False),
-    BoolVariable("cache", "whether to cache variables", False),
+    BoolVariable("cache", "whether to cache settings in %s" % cachefile, False),
     BoolVariable("debug", "debugging flag", False),
 )
 
@@ -146,6 +146,7 @@ Help("Build targets:\n\n")
 latexdir = Dir("latex", builddir)
 texfile = File(project_tag + ".tex", latexdir)
 env.SideEffect(texfile, "latex")
+env.NoClean(texfile)
 
 for name, desc in targets:
     target = Dir(name, builddir)
@@ -154,6 +155,7 @@ for name, desc in targets:
     if name not in latex_builders:
         env.Command(name, sphinxconf, sphinxcmd % locals())
         env.AlwaysBuild(name)
+        env.Alias(target, name)
     else:
         filename = project_tag + "." + name
 
