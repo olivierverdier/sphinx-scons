@@ -67,7 +67,9 @@ config.AddVariables(
     BoolVariable("debug", "debugging flag", False),
 )
 
-# Create a new environment, inheriting PATH to find builder program.
+# Create a new environment, inheriting PATH to find builder program.  Also
+# force LaTeX instead of TeX, since the .tex file won't exist at the right
+# time to check which one to use.
 env = Environment(ENV = {"PATH" : os.environ["PATH"]},
                   TEX = "latex", PDFTEX = "pdflatex",
                   tools = ['default', 'packaging'],
@@ -93,6 +95,7 @@ instdir = env["instdir"]
 install = env["install"]
 pkgtype = env["pkgtype"]
 
+# Dump internals if debugging.
 if debug:
     print "Environment:"
     print env.Dump()
@@ -153,23 +156,27 @@ for name, desc in targets:
     targetdir = str(target)
 
     if name not in latex_builders:
+        # Standard Sphinx target.
         env.Command(name, sphinxconf, sphinxcmd % locals())
         env.AlwaysBuild(name)
         env.Alias(target, name)
     else:
-        filename = project_tag + "." + name
-        outfile = File(filename, latexdir)
-
+        # Target built from LaTeX sources.
         try:
             buildfunc = getattr(env, latex_builders[name])
         except AttributeError:
             continue
 
-        buildfunc(outfile, texfile)
-        destfile = File(filename, target)
-        env.Command(destfile, outfile, Move(destfile, outfile))
+        filename = project_tag + "." + name
+        outfile = File(filename, latexdir)
 
-        env.Alias(name, destfile)
+        buildfunc(outfile, texfile)
+
+        # Copy built file to separate directory.
+        target = File(filename, target)
+        env.Command(target, outfile, Move(target, outfile))
+
+        env.Alias(name, target)
 
     env.Clean(name, [target])
     env.Clean('all', target)
