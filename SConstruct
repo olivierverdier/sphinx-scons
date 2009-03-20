@@ -1,5 +1,30 @@
 """
 This is a generic SCons script for running Sphinx (http://sphinx.pocoo.org).
+
+Type 'scons -h' for help.  This prints the available build targets on your
+system, and the configuration options you can set.
+
+If you set the 'cache' option, the option settings are cached into a file
+called '.sconsrc-sphinx' in the current directory.  When running
+subsequently, this file is reread.  A file with this name is also read from
+your home directory, if it exists, so you can put global settings there.
+
+The script looks into your 'conf.py' file for information about the
+project.  This is used in various places (e.g., to print the introductory
+message, and create package files).
+
+Here's some examples.  To build HTML docs:
+
+   scons html
+
+To create a package containing HTML and PDF docs, remembering the 'install'
+setting:
+
+   scons install=html,pdf cache=True package
+
+To clean up everything:
+
+   scons -c all
 """
 
 # Script info.
@@ -41,7 +66,7 @@ cachefile = ".sconsrc-sphinx"
 homedir = os.environ["HOME"]
 usercache = os.path.join(homedir, cachefile)
 
-# Configuration variables.
+# Configuration options.
 config = Variables([usercache, cachefile], ARGUMENTS)
 
 config.AddVariables(
