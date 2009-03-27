@@ -139,7 +139,8 @@ except KeyError:
     texfilename = None
 
 project_tag = project.replace(" ", "-").strip("()")
-package_tag = project_tag.lower() + "-" + release
+release_tag = release.replace(" ", "-").strip("()")
+package_tag = project_tag.lower() + "-" + release_tag.lower()
 
 # Build project description string.
 description = "%(project)s, release %(release)s, " \
@@ -247,7 +248,7 @@ env.Command('uninstall', None, Delete(projectdir))
 Help(help_format % ("uninstall", "uninstall documentation"))
 
 # Add package builder.
-packageroot = "-".join([project_tag, release])
+packageroot = "-".join([project_tag, release_tag])
 archive, package = env.Package(NAME = project_tag, VERSION = release,
                                PACKAGEROOT = packageroot,
                                PACKAGETYPE = pkgtype,
