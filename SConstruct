@@ -32,7 +32,7 @@ __author__  = "Glenn Hutchings"
 __email__   = "zondo42@googlemail.com"
 __url__     = "http://bitbucket.org/zondo/sphinx-scons"
 __license__ = "BSD"
-__version__ = "0.2"
+__version__ = "0.3"
 
 import sys, os
 
@@ -138,8 +138,9 @@ try:
 except KeyError:
     texfilename = None
 
-project_tag = project.replace(" ", "-").strip("()")
-release_tag = release.replace(" ", "-").strip("()")
+name2tag = lambda name: name.replace(" ", "-").strip("()")
+project_tag = name2tag(project)
+release_tag = name2tag(release)
 package_tag = project_tag.lower() + "-" + release_tag.lower()
 
 # Build project description string.
