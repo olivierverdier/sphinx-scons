@@ -32,7 +32,7 @@ __author__  = "Glenn Hutchings"
 __email__   = "zondo42@googlemail.com"
 __url__     = "http://bitbucket.org/zondo/sphinx-scons"
 __license__ = "BSD"
-__version__ = "0.3"
+__version__ = "0.4"
 
 import sys, os
 
