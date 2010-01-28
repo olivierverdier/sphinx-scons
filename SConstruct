@@ -66,7 +66,7 @@ targetnames = [name for name, desc in targets]
 cachefile = ".sconsrc-sphinx"
 
 # User cache file.
-homedir = os.environ["HOME"]
+homedir = os.path.expanduser('~')
 usercache = os.path.join(homedir, cachefile)
 
 # Configuration options.
