@@ -194,7 +194,7 @@ for name, desc in targets:
 
     if name not in latex_builders:
         # Standard Sphinx target.
-        env.Command(name, sphinxconf, sphinxcmd % locals())
+        env.Command(name, sphinxconf, sphinxcmd % locals(), chdir = True)
         env.AlwaysBuild(name)
         env.Alias(target, name)
     elif texinput:
@@ -211,7 +211,7 @@ for name, desc in targets:
 
         # Copy built file to separate directory.
         target = File(filename, target)
-        env.Command(target, outfile, Move(target, outfile))
+        env.Command(target, outfile, Move(target, outfile), chdir = True)
 
         env.Alias(name, target)
     else:
@@ -248,7 +248,7 @@ for name in install:
         env.Alias('install', inst)
 
 # Add uninstall target.
-env.Command('uninstall', None, Delete(projectdir))
+env.Command('uninstall', None, Delete(projectdir), chdir = True)
 Help(help_format % ("uninstall", "uninstall documentation"))
 
 # Add package builder.
