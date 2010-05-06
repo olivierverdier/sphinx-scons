@@ -54,6 +54,7 @@ targets = (
     ("changes",   "make an overview over all changed/added/deprecated items"),
     ("linkcheck", "check all external links for integrity"),
     ("doctest",   "run all doctests embedded in the documentation if enabled"),
+    ("source",    "run a command to generate the reStructuredText source"),
 )
 
 # LaTeX builders.
@@ -93,6 +94,7 @@ config.AddVariables(
                  "zip", ["zip", "targz", "tarbz2"], ignorecase = False),
     BoolVariable("cache", "whether to cache settings in %s" % cachefile, False),
     BoolVariable("debug", "debugging flag", False),
+    ("genrst", "Command to regenerate reStructuredText source", None),
 )
 
 # Create a new environment, inheriting PATH to find builder program.  Also
@@ -118,6 +120,7 @@ debug = env["debug"]
 options = env.get("opts", None)
 paper = env.get("paper", None)
 tags = env.get("tags", None)
+genrst = env.get("genrst", None)
 
 instdir = env["instdir"]
 install = env["install"]
@@ -188,13 +191,23 @@ if texfilename:
 # Add build targets.
 Help("Build targets:\n\n")
 
+if genrst != None:
+    source = env.Command('source', [], genrst)
+    env.AlwaysBuild(source)
+    env.Depends(srcdir, source)
+else:
+    Alias('source', srcdir)
+
 for name, desc in targets:
     target = Dir(name, builddir)
     targetdir = str(target)
 
-    if name not in latex_builders:
+    if name == 'source':
+        pass
+    elif name not in latex_builders:
         # Standard Sphinx target.
-        env.Command(name, sphinxconf, sphinxcmd % locals(), chdir = True)
+        env.Command(name, sphinxconf,
+                    sphinxcmd % locals(), chdir = True)
         env.AlwaysBuild(name)
         env.Alias(target, name)
     elif texinput:
