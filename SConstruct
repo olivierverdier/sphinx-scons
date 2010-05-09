@@ -104,6 +104,8 @@ env = Environment(ENV = {"PATH" : os.environ["PATH"]},
                   TEX = "latex", PDFTEX = "pdflatex",
                   tools = ['default', 'packaging'],
                   variables = config)
+if 'PYTHONPATH' in os.environ:
+    env['ENV']['PYTHONPATH'] = os.environ['PYTHONPATH']
 
 # Get configuration values from environment.
 sphinxconf = env["config"]
