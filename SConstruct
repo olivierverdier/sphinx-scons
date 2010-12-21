@@ -105,6 +105,8 @@ env = Environment(ENV = {"PATH" : os.environ["PATH"]},
                   TEX = "latex", PDFTEX = "pdflatex",
                   tools = ['default', 'packaging'],
                   variables = config)
+if 'PYTHONPATH' in os.environ:
+    env['ENV']['PYTHONPATH'] = os.environ['PYTHONPATH']
 
 # Get configuration values from environment.
 sphinxconf = env["config"]
@@ -193,11 +195,13 @@ if texfilename:
 Help("Build targets:\n\n")
 
 if genrst != None:
-    source = env.Command('source', [], genrst)
+    source = env.Command('source', [], genrst, chdir = True)
     env.AlwaysBuild(source)
     env.Depends(srcdir, source)
 else:
-    Alias('source', srcdir)
+    source = env.Command(
+        'source', [],
+        '@echo "No reStructuredText generator (genrst) given."')
 
 for name, desc in targets:
     target = Dir(name, builddir)
@@ -207,8 +211,9 @@ for name, desc in targets:
         pass
     elif name not in latex_builders:
         # Standard Sphinx target.
-        env.Command(name, sphinxconf,
-                    sphinxcmd % locals(), chdir = True)
+        targets = env.Command(name, sphinxconf,
+                              sphinxcmd % locals(), chdir = True)
+        env.Depends(targets, source)
         env.AlwaysBuild(name)
         env.Alias(target, name)
     elif texinput:
@@ -221,7 +226,8 @@ for name, desc in targets:
         filename = project_tag + "." + name
         outfile = File(filename, latexdir)
 
-        buildfunc(outfile, texinput)
+        targets = buildfunc(outfile, texinput)
+        env.Depends(targets, source)
 
         # Copy built file to separate directory.
         target = File(filename, target)
