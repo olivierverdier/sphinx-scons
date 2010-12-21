@@ -47,6 +47,7 @@ targets = (
     ("devhelp",   "make HTML files and a GNOME DevHelp project"),
     ("epub",      "make HTML files and an EPUB file for bookreaders"),
     ("latex",     "make LaTeX sources"),
+    ("texinfo",   "make Texinfo sources"),
     ("text",      "make text file for each RST file"),
     ("pdf",       "make PDF file from LaTeX sources"),
     ("ps",        "make PostScript file from LaTeX sources"),
